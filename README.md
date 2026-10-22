@@ -1,56 +1,96 @@
-# Welcome to your Expo app 👋
+# 🎯 HabitTracker-App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi mobile pelacak kebiasaan harian (*Daily Habit Tracker*) modern dan interaktif yang dibangun menggunakan **React Native**, **Expo SDK 57**, **TypeScript**, dan **Supabase**. Dirancang dengan prinsip desain **TaskFlow Modern Soft-UI**, animasi getaran taktil (*Haptics*), serta pengamanan sesi autentikasi berbasis enkripsi perangkat keras (*Keystore/Keychain*).
 
-## Get started
+---
 
-1. Install dependencies
+## ✨ Fitur Utama
 
-   ```bash
-   npm install
-   ```
+- **🎨 TaskFlow Modern Soft-UI**: Antarmuka bersih, palet warna seimbang (*Indigo & Slate 50*), kartu bersudut melengkung halus, dan tipografi kontras tinggi.
+- **⚡ Habit Management**:
+  - Tambah kebiasaan baru dengan pemilih emoji interaktif (*Add Habit Modal*).
+  - Tandai selesai / belum selesai dengan tombol centang lingkaran taktil (*Taptic Haptic Feedback*).
+  - Hapus kebiasaan dengan konfirmasi aman.
+- **🔥 Streak & Progress Tracking**:
+  - Kartu kemajuan harian (*Daily Progress Summary*) dengan persentase real-time dan bilah kemajuan (*Progress Bar*).
+  - Penghitungan streak konsistensi harian (*Daily Streak Counter*).
+- **🔒 Keystore Security & Protected Routes**:
+  - Penyimpanan sesi terenkripsi via `expo-secure-store` (Hardware Keystore di Android, Keychain di iOS).
+  - *Navigation Guard* otomatis yang melindungi rute aplikasi (`/login` ↔ `/`).
+- **☁️ Supabase Cloud Sync & Demo Mode**:
+  - Terintegrasi dengan REST API Supabase PostgreSQL.
+  - Mode Demo / Offline otomatis aktif jika kredensial Supabase belum diisi.
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Teknologi & Dependensi
 
-In the output, you'll find options to open the app in a
+- **Core**: React Native `0.86.3`, Expo SDK `~57.0.29`, React `19.2.3`
+- **Routing**: Expo Router `~57.0.27` (File-based Routing)
+- **Language**: TypeScript `~6.0.3` (Strict Mode)
+- **Storage & Security**: `@react-native-async-storage/async-storage`, `expo-secure-store`
+- **Feedback & Taptic**: `expo-haptics`
+- **Backend & Cloud**: `@supabase/supabase-js`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🚀 Memulai (Quick Start)
 
-## Get a fresh project
+### 1. Prasyarat
+- [Node.js](https://nodejs.org/) (versi LTS disarankan, v18+)
+- [Git](https://git-scm.com/)
+- Aplikasi **Expo Go** di ponsel (Android/iOS) atau Emulator/Simulator.
 
-When you're ready, run:
-
+### 2. Instalasi
+Clone repository dan pasang dependensi:
 ```bash
-npm run reset-project
+git clone https://github.com/aditpratamaaa/HabitTracker-App.git
+cd HabitTracker-App
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3. Konfigurasi Environment (`.env`)
+Salin file template `.env.example` ke `.env`:
+```bash
+cp .env.example .env
+```
+Isi variabel berikut jika ingin menghubungkan ke proyek Supabase:
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+```
+> *Catatan: Jika dibiarkan default/kosong, aplikasi secara otomatis berjalan dalam **Mode Demo** (penyimpanan lokal).*
 
-### Other setup steps
+### 4. Menjalankan Aplikasi
+```bash
+# Jalankan Metro Bundler
+npx expo start
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+# Atau langsung ke platform tertentu:
+npm run android   # Android Emulator / Device
+npm run ios       # iOS Simulator
+npm run web       # Browser Web
+```
 
-## Learn more
+### 5. Akun Uji Coba (Demo Mode)
+Jika menggunakan Mode Demo, gunakan kredensial bawaan berikut pada layar login:
+- **Email**: `user@mail.com`
+- **Password**: `password123`
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🧪 Pengujian & Kualitas Kode
 
-## Join the community
+```bash
+# Typecheck TypeScript
+npx tsc --noEmit
 
-Join our community of developers creating universal apps.
+# Linting ESLint (Expo Config)
+npm run lint
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 📄 Lisensi
+
+Didistribusikan di bawah lisensi MIT. Lihat file [LICENSE](LICENSE) untuk informasi lebih lanjut.

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Analisis Kematangan & Progres Aplikasi HabitTracker-App</title>
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-light: #EEF2FF;
+      --primary-dark: #3730A3;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --emerald: #10B981;
+      --amber: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--surface);
+      padding: 48px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+    }
+
+    .header-badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 20px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+      background: #F1F5F9;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .meta-item strong {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .meta-item span {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ECFDF5;
+      color: #065F46;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-top: 36px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+
+    ul, ol {
+      margin-bottom: 16px;
+      padding-left: 24px;
+      font-size: 15px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #F8FAFC;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    tr:nth-child(even) td {
+      background-color: #FAFAFA;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #F1F5F9;
+      color: #0F172A;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    pre {
+      background: #1E293B;
+      color: #F8FAFC;
+      padding: 16px 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13.5px;
+      margin: 16px 0;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+      background: #FFFFFF;
+    }
+
+    .card.highlight {
+      border-left: 4px solid var(--primary);
+      background: #F8FAFC;
+    }
+
+    .print-button {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+      transition: transform 0.15s ease, background-color 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-button:hover {
+      background: var(--primary-dark);
+      transform: scale(1.03);
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .print-button {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-badge">Laporan Resmi Praktikum</div>
+    <h1>Laporan Analisis Kematangan & Progres Aplikasi</h1>
+    <div class="subtitle">HabitTracker-App — Aplikasi Pencatat Kebiasaan Harian Modern</div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <strong>Mata Kuliah</strong>
+        <span>Pemrograman Mobile (Semester 5)</span>
+      </div>
+      <div class="meta-item">
+        <strong>Tahap Proyek</strong>
+        <span>Sprint 01 + Sprint 02 + Soft-UI</span>
+      </div>
+      <div class="meta-item">
+        <strong>Tanggal Pembaruan</strong>
+        <span>22 Oktober 2026</span>
+      </div>
+      <div class="meta-item">
+        <strong>Status Sistem</strong>
+        <span class="status-badge">🟢 Siap Produksi (MVP)</span>
+      </div>
+    </div>
+
+    <h2>1. Ringkasan Eksekutif</h2>
+    <p>
+      Aplikasi <strong>HabitTracker-App</strong> telah berhasil mencapai kematangan fungsional dan estetika penuh. Seluruh antarmuka telah diselaraskan dengan filosofi desain <strong>TaskFlow Modern Soft-UI</strong> yang mengedepankan keterbacaan tinggi, palet Slate & Indigo, kartu sudut melengkung halus, dan interaksi taktil bergetar (<em>Haptics</em>).
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Komponen Diagnostik</th>
+          <th>Perintah Pemeriksaan</th>
+          <th>Status</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>TypeScript Compiler</strong></td>
+          <td><code>npx tsc --noEmit</code></td>
+          <td><span class="status-badge">0 Error (Lulus 100%)</span></td>
+          <td>Ketik statis ketat tanpa cacat tipe.</td>
+        </tr>
+        <tr>
+          <td><strong>ESLint Expo</strong></td>
+          <td><code>npx expo lint</code></td>
+          <td><span class="status-badge">0 Warning / 0 Error</span></td>
+          <td>Sesuai aturan konvensi SDK 57.</td>
+        </tr>
+        <tr>
+          <td><strong>Metro Bundler</strong></td>
+          <td><code>npm run web / android</code></td>
+          <td><span class="status-badge">Bundled Successfully</span></td>
+          <td>Dapat dijalankan langsung di Web & Android.</td>
+        </tr>
+        <tr>
+          <td><strong>Standar Aksesibilitas</strong></td>
+          <td>WCAG Touch Targets</td>
+          <td><span class="status-badge">&ge; 44x44 px Lulus</span></td>
+          <td>Ramah jari dan screen reader.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. Arsitektur & Fungsionalitas yang Telah Selesai</h2>
+
+    <div class="card highlight">
+      <h3>🔒 A. Modul Keamanan & Autentikasi (Sprint 02)</h3>
+      <ul>
+        <li><strong>Hardware Keystore / Keychain:</strong> Penyimpanan token sesi aman memanfaatkan hardware cryptographic module via <code>expo-secure-store</code>.</li>
+        <li><strong>Protected Route Guard:</strong> Pengalihan navigasi otomatis di <code>src/app/_layout.tsx</code>. Pengguna tanpa token akan dikunci di <code>/login</code>, dan pengguna ber-token langsung menuju beranda <code>/</code>.</li>
+        <li><strong>Fitur Uji Akun Cepat:</strong> Form login dilengkapi tombol auto-fill untuk akun demo (<code>user@mail.com</code> / <code>password123</code>).</li>
+      </ul>
+    </div>
+
+    <div class="card highlight">
+      <h3>📋 B. Manajemen Kebiasaan & Gamifikasi (Sprint 01)</h3>
+      <ul>
+        <li><strong>Operasi CRUD Lengkap:</strong> Pengguna dapat menambah, mencentang selesai/batal, serta menghapus kebiasaan dengan konfirmasi dialog.</li>
+        <li><strong>Penyimpanan Persisten:</strong> Data tersimpan permanen di perangkat menggunakan <code>AsyncStorage</code>.</li>
+        <li><strong>Mesin Runtutan (Streak Engine):</strong> Perhitungan api konsistensi harian (🔥) yang pintar menjaga streak jika hari ini belum dicentang tetapi kemarin sudah tuntas.</li>
+        <li><strong>Auto-Reset Tengah Malam:</strong> Deteksi pergantian hari otomatis via timer 00:00 dan listener <code>AppState</code>.</li>
+      </ul>
+    </div>
+
+    <div class="card highlight">
+      <h3>🎨 C. Pembaruan Desain TaskFlow Modern Soft-UI</h3>
+      <ul>
+        <li><strong>Kartu Progres Harian:</strong> Kartu besar solid Indigo (<code>#4F46E5</code>) dengan persentase progres tebal dan drop shadow lembut.</li>
+        <li><strong>Kartu Kebiasaan 20px:</strong> Sudut membulat 20px, tanpa border keras, dan tombol centang lingkaran sempurna 44x44px.</li>
+        <li><strong>Umpan Balik Taktil (Haptics):</strong> Memberikan getaran motor nyata pada ponsel saat pengguna berhasil mencentang target kebiasaan.</li>
+        <li><strong>Bottom Sheet Modal:</strong> Formulir tambah kebiasaan dengan pemilih emoji visual beragam.</li>
+      </ul>
+    </div>
+
+    <h2>3. Cara Menjalankan Aplikasi</h2>
+    <p>Aplikasi dapat dieksekusi secara praktis dari root workspace:</p>
+    <pre><code># Menjalankan Dev Server
+npm start
+
+# Menjalankan langsung di Web Browser
+npm run web
+
+# Menjalankan di Android Emulator / Device USB
+npm run android</code></pre>
+
+    <h2>4. Rekomendasi Tahap Lanjutan (Opsional)</h2>
+    <ol>
+      <li><strong>Notifikasi Lokal (<code>expo-notifications</code>):</strong> Pengingat otomatis di jam malam untuk mengevaluasi kebiasaan harian.</li>
+      <li><strong>Grafik Statistik & Heatmap:</strong> Tampilan kalender ala GitHub contribution graph untuk memantau kemajuan bulanan.</li>
+      <li><strong>Sinkronisasi Cloud:</strong> Menghubungkan penyimpanan lokal dengan database cloud (Firebase / Supabase).</li>
+    </ol>
+  </div>
+
+  <button class="print-button" onclick="window.print()">
+    🖨️ Cetak / Simpan ke PDF
+  </button>
+
+</body>
+</html>
