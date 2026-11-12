@@ -32,7 +32,7 @@ function toHabit(row: Record<string, unknown>): Habit {
 }
 
 export function useHabits() {
-  const { user } = useAuth();
+  const { user, freezeTickets, consumeFreezeTicket } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +126,10 @@ export function useHabits() {
       const completedDates = is_completed
         ? [...dates.filter((d) => d !== todayStr), todayStr].sort()
         : dates.filter((d) => d !== todayStr);
-      const streak = calculateStreak(completedDates, todayStr);
+      const { streak, freezeUsed } = calculateStreak(completedDates, todayStr, freezeTickets);
+      if (freezeUsed) {
+        void consumeFreezeTicket();
+      }
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       const nextHabits = before.map((habit) =>
@@ -159,7 +162,7 @@ export function useHabits() {
         setError(updateError.message);
       }
     },
-    [habits, todayStr, user]
+    [consumeFreezeTicket, freezeTickets, habits, todayStr, user]
   );
 
   const addHabit = useCallback(
@@ -261,6 +264,7 @@ export function useHabits() {
     addHabit,
     deleteHabit,
     refreshHabits: fetchHabits,
+    freezeTickets,
   };
 }
 

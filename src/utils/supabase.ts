@@ -3,62 +3,104 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 /**
- * Nilai ini dibaca saat bundling aplikasi. Jangan pernah memasukkan service_role
- * key di aplikasi klien; gunakan hanya anon/publishable key Supabase.
+ * Konfigurasi Supabase Client
+ *
+ * Anda dapat mengisi kredensial pada file `.env` (direkomendasikan):
+ * EXPO_PUBLIC_SUPABASE_URL=https://xyzcompany.supabase.co
+ * EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
  */
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const rawUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const rawKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-    supabaseAnonKey &&
-    supabaseUrl.startsWith('https://') &&
-    !supabaseUrl.includes('MASUKKAN_URL_SUPABASE') &&
-    !supabaseAnonKey.includes('MASUKKAN_KEY_SUPABASE')
+/**
+ * Sanitasi URL untuk mencegah crash:
+ * "Error: Invalid supabaseUrl: Provided URL is malformed"
+ * ketika pengguna memasukkan placeholder dengan karakter tanda kurung siku [...]
+ */
+function sanitizeSupabaseUrl(url: string): string {
+  if (!url) return 'https://placeholder.supabase.co';
+  // Hapus kurung siku jika pengguna menyalin langsung format [MASUKKAN_URL_SUPABASE_ANDA_DI_SINI]
+  const cleaned = url.replace(/[[\]]/g, '').trim();
+  if (
+    !cleaned ||
+    cleaned.includes('MASUKKAN_URL_SUPABASE') ||
+    cleaned.includes('YOUR_PROJECT_REF') ||
+    cleaned.includes('placeholder')
+  ) {
+    return 'https://placeholder.supabase.co';
+  }
+  try {
+    const formatted = cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
+    const parsed = new URL(formatted);
+    return parsed.origin;
+  } catch {
+    return 'https://placeholder.supabase.co';
+  }
+}
+
+/**
+ * Pengecekan apakah URL dan Anon Key sudah diisi oleh pengembang dengan nilai asli.
+ */
+export const isSupabaseConfigured: boolean = Boolean(
+  rawUrl &&
+    rawKey &&
+    !rawUrl.includes('MASUKKAN_URL_SUPABASE') &&
+    !rawUrl.includes('YOUR_PROJECT_REF') &&
+    !rawUrl.includes('placeholder') &&
+    !rawKey.includes('MASUKKAN_KEY_SUPABASE') &&
+    !rawKey.includes('placeholder') &&
+    rawKey !== 'placeholder-anon-key'
 );
 
 export const supabaseConfigurationError =
   'Supabase belum dikonfigurasi. Isi EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_ANON_KEY pada file .env.';
 
-const authStorage = {
+/**
+ * Adapter penyimpanan sesi aman (Hardware Keystore / Keychain)
+ * menggunakan expo-secure-store untuk iOS & Android,
+ * serta fallback ke localStorage di web browser dan aman saat SSR (Node).
+ */
+const ExpoSecureStoreAdapter = {
   async getItem(key: string): Promise<string | null> {
     if (Platform.OS === 'web') {
-      return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+      if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+        return null;
+      }
+      return window.localStorage.getItem(key);
     }
     return SecureStore.getItemAsync(key);
   },
   async setItem(key: string, value: string): Promise<void> {
     if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.setItem(key, value);
+      }
       return;
     }
-    await SecureStore.setItemAsync(key, value, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED,
-    });
+    await SecureStore.setItemAsync(key, value);
   },
   async removeItem(key: string): Promise<void> {
     if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.removeItem(key);
+      }
       return;
     }
     await SecureStore.deleteItemAsync(key);
   },
 };
 
-// URL fallback hanya mencegah error saat aplikasi dibuka sebelum .env diisi.
-// Request auth/data tetap ditolak oleh requireSupabaseConfiguration() di bawah.
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key',
-  {
-    auth: {
-      storage: authStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: Platform.OS === 'web',
-    },
-  }
-);
+const resolvedUrl = sanitizeSupabaseUrl(rawUrl);
+const resolvedKey = rawKey.trim() || 'placeholder-anon-key';
+
+export const supabase = createClient(resolvedUrl, resolvedKey, {
+  auth: {
+    storage: ExpoSecureStoreAdapter,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: Platform.OS === 'web' && typeof window !== 'undefined',
+  },
+});
 
 export function requireSupabaseConfiguration(): void {
   if (!isSupabaseConfigured) {

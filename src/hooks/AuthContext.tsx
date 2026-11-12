@@ -66,6 +66,11 @@ type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   isDemoUser: boolean;
+  freezeTickets: number;
+  fetchProfile: () => Promise<void>;
+  addFreezeTicket: () => Promise<void>;
+  consumeFreezeTicket: () => Promise<boolean>;
+  useFreezeTicket: () => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
   signInDemo: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<boolean>;
@@ -77,6 +82,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [freezeTickets, setFreezeTickets] = useState<number>(1);
 
   useEffect(() => {
     let mounted = true;
@@ -152,11 +158,104 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => subscription.remove();
   }, []);
 
+  const fetchProfile = useCallback(async (userId?: string) => {
+    const uid = userId || session?.user?.id;
+    if (!uid) {
+      setFreezeTickets(1);
+      return;
+    }
+
+    if (uid === 'demo-user-id' || !isSupabaseConfigured) {
+      return;
+    }
+
+    try {
+      requireSupabaseConfiguration();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('freeze_tickets')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Gagal memuat profil freeze_tickets:', error.message);
+        return;
+      }
+
+      if (data && typeof data.freeze_tickets === 'number') {
+        setFreezeTickets(data.freeze_tickets);
+      } else {
+        const { error: insertErr } = await supabase
+          .from('profiles')
+          .insert({ id: uid, freeze_tickets: 1 });
+        if (!insertErr) {
+          setFreezeTickets(1);
+        }
+      }
+    } catch (err) {
+      console.warn('Error saat fetchProfile:', err);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      const timer = setTimeout(() => {
+        void fetchProfile(session.user.id);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [fetchProfile, session?.user?.id]);
+
+  const addFreezeTicket = useCallback(async () => {
+    const nextTickets = freezeTickets + 1;
+    setFreezeTickets(nextTickets);
+
+    const uid = session?.user?.id;
+    if (uid && uid !== 'demo-user-id' && isSupabaseConfigured) {
+      try {
+        requireSupabaseConfiguration();
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({ id: uid, freeze_tickets: nextTickets, updated_at: new Date().toISOString() });
+
+        if (error) {
+          console.warn('Gagal menambah tiket di Supabase:', error.message);
+          setFreezeTickets(freezeTickets);
+          throw error;
+        }
+      } catch (err) {
+        setFreezeTickets(freezeTickets);
+        throw err;
+      }
+    }
+  }, [freezeTickets, session?.user?.id]);
+
+  const consumeFreezeTicket = useCallback(async (): Promise<boolean> => {
+    if (freezeTickets <= 0) return false;
+    const nextTickets = freezeTickets - 1;
+    setFreezeTickets(nextTickets);
+
+    const uid = session?.user?.id;
+    if (uid && uid !== 'demo-user-id' && isSupabaseConfigured) {
+      try {
+        requireSupabaseConfiguration();
+        await supabase
+          .from('profiles')
+          .update({ freeze_tickets: nextTickets, updated_at: new Date().toISOString() })
+          .eq('id', uid);
+      } catch (err) {
+        console.warn('Gagal mengurangi tiket freeze di Supabase:', err);
+      }
+    }
+    return true;
+  }, [freezeTickets, session?.user?.id]);
+
   const signInDemo = useCallback(async () => {
     const demoUser = createDemoUser();
     const demoSession = createDemoSession(demoUser);
     await saveToken(DUMMY_SESSION_TOKEN);
     setSession(demoSession);
+    setFreezeTickets(1);
   }, []);
 
   const signIn = useCallback(
@@ -210,6 +309,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signOut = useCallback(async () => {
     const storedToken = await getToken();
+    setFreezeTickets(1);
     if (storedToken === DUMMY_SESSION_TOKEN || session?.user?.id === 'demo-user-id') {
       await deleteToken();
       setSession(null);
@@ -233,12 +333,29 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user: session?.user ?? null,
       isLoading,
       isDemoUser,
+      freezeTickets,
+      fetchProfile,
+      addFreezeTicket,
+      consumeFreezeTicket,
+      useFreezeTicket: consumeFreezeTicket,
       signIn,
       signInDemo,
       signUp,
       signOut,
     }),
-    [session, isLoading, isDemoUser, signIn, signInDemo, signUp, signOut]
+    [
+      session,
+      isLoading,
+      isDemoUser,
+      freezeTickets,
+      fetchProfile,
+      addFreezeTicket,
+      consumeFreezeTicket,
+      signIn,
+      signInDemo,
+      signUp,
+      signOut,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

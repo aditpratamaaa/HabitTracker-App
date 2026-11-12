@@ -1,263 +1,247 @@
-import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import React from 'react';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { COLORS } from '../constants/colors';
 import type { Habit } from '../constants/types';
-import { isCompletedOn } from '../utils/streakUtils';
 
-interface HabitCardProps {
+type HabitCardProps = {
   habit: Habit;
   todayStr: string;
-  onToggle: (id: string) => void;
-  onDelete: (id: string, title?: string) => void;
-}
+  onToggle: (habitId: string) => void;
+  onDelete: (habitId: string) => void;
+};
 
 /**
- * HabitCard - Desain TaskFlow Modern Soft-UI
- * - Kartu berlatar surface (Putih) di atas latar abu-abu
- * - Sudut membulat besar (borderRadius: 20) tanpa border keras
- * - Elevation / shadow yang sangat halus
- * - Tombol centang berbentuk lingkaran sempurna (touch target >= 44x44px)
+ * HabitCard - Item Kebiasaan (Stitch Design Specification)
+ * Desain kartu Soft-UI rounded 24px, ikon kategori dengan wadah lembut,
+ * streak badge api amber (🔥 X hari), dan tombol centang 44x44px ramah WCAG.
  */
-export function HabitCard({
-  habit,
-  todayStr,
-  onToggle,
-  onDelete,
-}: HabitCardProps) {
-  const isCompleted = isCompletedOn(habit, todayStr);
-  const streak = habit.streak;
+export function HabitCard({ habit, todayStr: _todayStr, onToggle, onDelete }: HabitCardProps) {
+  const isDone = habit.is_completed;
+  const streakCount = Math.max(habit.streak ?? (isDone ? 1 : 0), 0);
 
   const handleToggle = () => {
-    // Sensasi getaran taktil haptic feedback
+    // Getaran taktil (Haptics)
     if (Platform.OS !== 'web') {
       try {
-        if (isCompleted) {
-          // Getaran ringan saat membatalkan centang
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (!isDone) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
-          // Getaran sukses saat menyelesaikan kebiasaan
-          void Haptics.notificationAsync(
-            Haptics.NotificationFeedbackType.Success
-          );
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
       } catch {
-        // Fallback aman untuk perangkat tanpa motor getar
+        // Abaikan jika simulator tidak mendukung haptics
       }
     }
-
-    // Jalankan fungsi mutasi utama
     onToggle(habit.id);
   };
 
+  const confirmDelete = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Hapus kebiasaan "${habit.title}"?`)) {
+        onDelete(habit.id);
+      }
+    } else {
+      Alert.alert(
+        'Hapus Kebiasaan',
+        `Apakah Anda yakin ingin menghapus "${habit.title}"?`,
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Hapus', style: 'destructive', onPress: () => onDelete(habit.id) },
+        ]
+      );
+    }
+  };
+
   return (
-    <View style={[styles.card, isCompleted && styles.cardCompleted]}>
-      {/* 1. KIRI: Ikon Visual Emoji */}
-      <View style={styles.iconContainer} accessible={false}>
-        <Text style={styles.iconText}>{habit.emoji || '🎯'}</Text>
-      </View>
-
-      {/* 2. TENGAH: Judul Kebiasaan & Badge Streak */}
-      <View style={styles.contentContainer}>
-        <Text
-          style={[styles.title, isCompleted && styles.titleCompleted]}
-          numberOfLines={2}
-        >
-          {habit.title}
-        </Text>
-
-        <View style={styles.metaRow}>
-          {/* Lencana Api Streak */}
-          <View
-            style={[
-              styles.streakBadge,
-              streak > 0 ? styles.streakBadgeActive : styles.streakBadgeInactive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.streakText,
-                streak === 0 && styles.streakTextInactive,
-              ]}
-            >
-              🔥 {streak} hari
-            </Text>
+    <View style={styles.cardWrapper}>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        onLongPress={confirmDelete}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isDone }}
+        accessibilityLabel={`${habit.title}, streak ${streakCount} hari`}
+        accessibilityHint="Tekan tombol centang untuk mengubah status, tekan lama untuk menghapus"
+      >
+        <View style={styles.leftRow}>
+          {/* Wadah Ikon Kategori Lembut (48x48px) */}
+          <View style={[styles.iconBox, isDone && styles.iconBoxDone]}>
+            <Text style={styles.iconEmoji}>{habit.emoji || '🎯'}</Text>
           </View>
 
-          {/* Tombol Hapus Kebiasaan (Touch Target Minimal 44x44px) */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteButton,
-              pressed && styles.deleteButtonPressed,
-            ]}
-            onPress={() => onDelete(habit.id, habit.title)}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`Hapus kebiasaan ${habit.title}`}
-            accessibilityHint="Membuka dialog konfirmasi untuk menghapus kebiasaan ini"
-            hitSlop={6}
-          >
-            <Text style={styles.deleteButtonText}>✕</Text>
-          </Pressable>
-        </View>
-      </View>
+          {/* Info Judul & Streak */}
+          <View style={styles.infoCol}>
+            <Text
+              style={[styles.title, isDone && styles.titleDone]}
+              numberOfLines={1}
+            >
+              {habit.title}
+            </Text>
 
-      {/* 3. KANAN: Tombol Centang Lingkaran Sempurna (Touch Target >= 44x44px) */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.circleCheckButton,
-          isCompleted
-            ? styles.checkButtonCompleted
-            : styles.checkButtonPending,
-          pressed && styles.checkButtonPressed,
-        ]}
-        onPress={handleToggle}
-        accessible={true}
-        accessibilityRole="button"
-        accessibilityLabel={
-          isCompleted
-            ? `Tandai belum selesai untuk ${habit.title}`
-            : `Tandai selesai untuk ${habit.title}`
-        }
-        accessibilityState={{ checked: isCompleted }}
-      >
-        <Text
-          style={[
-            styles.checkIcon,
-            isCompleted && styles.checkIconCompleted,
+            <View style={styles.metaRow}>
+              {/* Badge Streak Api Amber 🔥 */}
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakFlame}>🔥</Text>
+                <Text style={styles.streakText}>{streakCount} hari</Text>
+              </View>
+
+              <Text style={styles.categoryLabel}>Target harian</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Tombol Centang 44x44px (Standar Aksesibilitas WCAG) */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.checkbox,
+            isDone ? styles.checkboxDone : styles.checkboxPending,
+            pressed && styles.checkboxPressed,
           ]}
+          onPress={handleToggle}
+          hitSlop={6}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={isDone ? 'Tandai belum selesai' : 'Tandai selesai'}
         >
-          {isCompleted ? '✓' : ''}
-        </Text>
+          {isDone ? (
+            <Text style={styles.checkIcon}>✓</Text>
+          ) : (
+            <View style={styles.emptyCheckDot} />
+          )}
+        </Pressable>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Kartu Surface (Putih) di atas latar aplikasi abu-abu, Sudut 20px, Tanpa Border Keras, Shadow Sangat Halus
+  cardWrapper: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
   card: {
-    backgroundColor: COLORS.surface, // Putih bersih (#FFFFFF)
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 20, // Melengkung 20px
+    justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.65)', // Border sangat tipis dan lembut (tanpa border keras)
-    // Shadow sangat halus
+    borderColor: '#F1F5F9', // Slate 100
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
     elevation: 2,
   },
-  cardCompleted: {
-    backgroundColor: '#FFFFFF',
-    opacity: 0.85,
+  cardPressed: {
+    transform: [{ scale: 0.99 }],
+    backgroundColor: '#F8FAFC',
   },
-  // Kiri: Kotak Ikon Emoji
-  iconContainer: {
+  leftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 12,
+  },
+  iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceMuted,
+    borderRadius: 18,
+    backgroundColor: '#EEF2FF', // Indigo 50
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  iconText: {
-    fontSize: 24,
+  iconBoxDone: {
+    backgroundColor: '#F1F5F9',
   },
-  // Tengah: Konten Judul & Streak
-  contentContainer: {
+  iconEmoji: {
+    fontSize: 22,
+  },
+  infoCol: {
     flex: 1,
-    marginRight: 12,
-    justifyContent: 'center',
   },
   title: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.textPrimary,
-    lineHeight: 21,
+    color: '#1E293B', // Slate 800
     letterSpacing: -0.2,
   },
-  titleCompleted: {
+  titleDone: {
+    color: '#94A3B8', // Slate 400
     textDecorationLine: 'line-through',
-    color: COLORS.textMuted,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 5,
     gap: 8,
   },
   streakBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 3.5,
-    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7', // Amber 100
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 12,
+    gap: 3,
   },
-  streakBadgeActive: {
-    backgroundColor: COLORS.streakLight,
-  },
-  streakBadgeInactive: {
-    backgroundColor: COLORS.surfaceMuted,
+  streakFlame: {
+    fontSize: 11,
   },
   streakText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.streakDark,
+    color: '#D97706', // Amber 600
+    fontSize: 11,
+    fontWeight: '800',
   },
-  streakTextInactive: {
-    color: COLORS.textMuted,
+  categoryLabel: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '500',
   },
-  deleteButton: {
-    width: 44, // Touch target >= 44x44px
+  // Tombol Centang WCAG 44x44
+  checkbox: {
+    width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteButtonPressed: {
-    backgroundColor: COLORS.dangerLight,
+  checkboxPending: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 2,
+    borderColor: '#CBD5E1', // Slate 300
   },
-  deleteButtonText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    fontWeight: '700',
+  checkboxDone: {
+    backgroundColor: COLORS.primary, // #4F46E5
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  // Kanan: Tombol Centang Berbentuk Lingkaran Sempurna (44x44px >= 44px)
-  circleCheckButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22, // Lingkaran Sempurna
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkButtonPressed: {
-    transform: [{ scale: 0.94 }],
-  },
-  // Belum selesai: border tipis abu-abu di atas latar putih
-  checkButtonPending: {
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-  },
-  // Selesai: isi warna primary (Indigo) dan ikon centang putih
-  checkButtonCompleted: {
-    backgroundColor: COLORS.primary, // Indigo (#4F46E5)
-    borderColor: COLORS.primary,
-    borderWidth: 1.5,
+  checkboxPressed: {
+    transform: [{ scale: 0.92 }],
   },
   checkIcon: {
+    color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: '800',
-    color: 'transparent',
+    fontWeight: '900',
   },
-  checkIconCompleted: {
-    color: '#FFFFFF', // Ikon centang putih
+  emptyCheckDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'transparent',
   },
 });
-

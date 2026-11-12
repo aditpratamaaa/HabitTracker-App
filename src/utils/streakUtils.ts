@@ -10,43 +10,119 @@ export interface DailyProgress {
   percentage: number;
 }
 
+/** Hasil kalkulasi streak dengan status penggunaan tiket freeze. */
+export interface StreakResult {
+  /** Jumlah hari berturut-turut (streak) */
+  streak: number;
+  /** Menandakan apakah 1 tiket freeze digunakan untuk melindungi streak kemarin */
+  freezeUsed: boolean;
+  /** Sisa tiket freeze yang tersedia setelah kalkulasi */
+  remainingTickets: number;
+}
+
 /**
- * Menghitung jumlah hari berturut-turut (streak) yang diselesaikan.
+ * Menghitung jumlah hari berturut-turut (streak) yang diselesaikan dengan dukungan Tiket Freeze (❄️).
  *
- * Aturan:
- * - Hari ini selesai      → hitung mundur mulai dari hari ini.
- * - Hari ini BELUM selesai, tapi kemarin selesai → streak tetap aman,
- *   hitung mundur mulai dari kemarin (pengguna masih punya waktu hari ini).
- * - Hari ini & kemarin sama-sama tidak selesai → streak putus (0).
- *
- * Contoh (hari ini 15 Okt):
- *   [13, 14, 15] → 3   |   [13, 14] → 2   |   [12, 13] → 0
+ * Aturan Gamifikasi:
+ * 1. Hari ini selesai:
+ *    - Kemarin selesai → streak berlanjut normal.
+ *    - Kemarin bolos, tapi freeze_tickets > 0 dan 2 hari lalu selesai:
+ *      → Tiket freeze melindungi kemarin (freezeUsed = true), streak dari 2 hari lalu dipertahankan + hari ini!
+ *    - Kemarin bolos dan tiket habis → streak reset menjadi 1 (hanya hari ini).
+ * 2. Hari ini BELUM selesai:
+ *    - Kemarin selesai → streak tetap aman, pengguna masih punya waktu hari ini.
+ *    - Kemarin bolos:
+ *      - freeze_tickets > 0 dan 2 hari lalu selesai:
+ *        → Tiket freeze digunakan (freezeUsed = true), streak dipertahankan (tidak reset ke 0)!
+ *      - freeze_tickets <= 0 atau streak memang putus sebelumnya:
+ *        → Streak di-reset ke 0.
  */
 export function calculateStreak(
   completedDates: readonly string[],
-  todayStr: string = getTodayString()
-): number {
-  if (completedDates.length === 0) return 0;
+  todayStr: string = getTodayString(),
+  freezeTickets: number = 0
+): StreakResult {
+  const safeTickets = Math.max(0, freezeTickets);
+  const defaultResult: StreakResult = {
+    streak: 0,
+    freezeUsed: false,
+    remainingTickets: safeTickets,
+  };
+
+  if (!completedDates || completedDates.length === 0) {
+    return defaultResult;
+  }
 
   const done = new Set(completedDates);
   const yesterdayStr = addDays(todayStr, -1);
+  const twoDaysAgoStr = addDays(todayStr, -2);
 
-  let cursor: string;
+  // KASUS 1: Hari ini dicentang
   if (done.has(todayStr)) {
-    cursor = todayStr;
-  } else if (done.has(yesterdayStr)) {
-    cursor = yesterdayStr;
-  } else {
-    return 0;
+    if (done.has(yesterdayStr)) {
+      // Kemarin dicentang: streak beruntun normal
+      let streak = 0;
+      let cursor = todayStr;
+      while (done.has(cursor)) {
+        streak += 1;
+        cursor = addDays(cursor, -1);
+      }
+      return { streak, freezeUsed: false, remainingTickets: safeTickets };
+    } else if (safeTickets > 0 && done.has(twoDaysAgoStr)) {
+      // Kemarin bolos, tetapi dilindungi 1 Tiket Freeze!
+      let streak = 1; // Hari ini
+      let cursor = twoDaysAgoStr;
+      while (done.has(cursor)) {
+        streak += 1;
+        cursor = addDays(cursor, -1);
+      }
+      return {
+        streak,
+        freezeUsed: true,
+        remainingTickets: safeTickets - 1,
+      };
+    } else {
+      // Kemarin bolos dan tidak ada tiket freeze
+      return { streak: 1, freezeUsed: false, remainingTickets: safeTickets };
+    }
   }
 
-  // Setiap iterasi memakai tanggal berbeda dari Set, jadi pasti berhenti.
-  let streak = 0;
-  while (done.has(cursor)) {
-    streak += 1;
-    cursor = addDays(cursor, -1);
+  // KASUS 2: Hari ini BELUM dicentang
+  if (done.has(yesterdayStr)) {
+    // Kemarin selesai: streak aman (pengguna masih punya waktu hari ini)
+    let streak = 0;
+    let cursor = yesterdayStr;
+    while (done.has(cursor)) {
+      streak += 1;
+      cursor = addDays(cursor, -1);
+    }
+    return { streak, freezeUsed: false, remainingTickets: safeTickets };
+  } else if (safeTickets > 0 && done.has(twoDaysAgoStr)) {
+    // Kemarin bolos, tetapi dilindungi 1 Tiket Freeze (Streak TIDAK di-reset ke 0!)
+    let streak = 0;
+    let cursor = twoDaysAgoStr;
+    while (done.has(cursor)) {
+      streak += 1;
+      cursor = addDays(cursor, -1);
+    }
+    return {
+      streak,
+      freezeUsed: true,
+      remainingTickets: safeTickets - 1,
+    };
   }
-  return streak;
+
+  // Kemarin bolos dan tidak ada tiket freeze (atau 2 hari lalu juga tidak selesai)
+  return defaultResult;
+}
+
+/** Helper untuk mendapatkan nilai numerik streak secara langsung */
+export function getStreakCount(
+  completedDates: readonly string[],
+  todayStr: string = getTodayString(),
+  freezeTickets: number = 0
+): number {
+  return calculateStreak(completedDates, todayStr, freezeTickets).streak;
 }
 
 /** Apakah habit sudah dicentang pada tanggal tertentu. */
@@ -58,36 +134,48 @@ export function isCompletedOn(habit: Habit, dateStr: string): boolean {
   return habit.completedDates.includes(dateStr);
 }
 
-
 /**
- * Mengembalikan salinan habit dengan streak yang dihitung ulang.
- * Panggil setiap kali data dimuat atau hari berganti agar streak tidak basi.
+ * Mengembalikan salinan habit dengan streak yang dihitung ulang dengan mempertimbangkan tiket freeze.
  */
-export function withFreshStreak(habit: Habit, todayStr: string = getTodayString()): Habit {
+export function withFreshStreak(
+  habit: Habit,
+  todayStr: string = getTodayString(),
+  freezeTickets: number = 0
+): Habit {
   const dates = Array.isArray(habit.completedDates) ? habit.completedDates : [];
-  const streak = calculateStreak(dates, todayStr);
+  const { streak } = calculateStreak(dates, todayStr, freezeTickets);
   return streak === habit.streak ? habit : { ...habit, streak };
 }
 
 /** Versi array dari `withFreshStreak`. */
-export function refreshStreaks(habits: readonly Habit[], todayStr: string = getTodayString()): Habit[] {
-  return habits.map((habit) => withFreshStreak(habit, todayStr));
+export function refreshStreaks(
+  habits: readonly Habit[],
+  todayStr: string = getTodayString(),
+  freezeTickets: number = 0
+): Habit[] {
+  return habits.map((habit) => withFreshStreak(habit, todayStr, freezeTickets));
 }
 
 /**
  * Centang / batal-centang habit pada `todayStr`, lalu hitung ulang streak.
  * Tidak memutasi objek asli (aman untuk state React).
  */
-export function toggleHabitCompletion(habit: Habit, todayStr: string = getTodayString()): Habit {
+export function toggleHabitCompletion(
+  habit: Habit,
+  todayStr: string = getTodayString(),
+  freezeTickets: number = 0
+): Habit {
   const dates = Array.isArray(habit.completedDates) ? habit.completedDates : [];
   const completedDates = isCompletedOn(habit, todayStr)
     ? dates.filter((date) => date !== todayStr)
     : [...dates, todayStr].sort();
 
+  const { streak } = calculateStreak(completedDates, todayStr, freezeTickets);
+
   return {
     ...habit,
     completedDates,
-    streak: calculateStreak(completedDates, todayStr),
+    streak,
   };
 }
 

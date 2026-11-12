@@ -1,56 +1,75 @@
 /**
- * Palet warna aplikasi HabitTracker (TaskFlow Modern Soft-UI Theme).
+ * Palet warna resmi aplikasi HabitTracker berdasarkan TaskFlow Kinetic (Stitch Design System).
  *
- * Kombinasi Slate & Indigo untuk estetika antarmuka modern, bersih, dan berfokus tinggi.
- * Memenuhi standar kontras aksesibilitas WCAG 2.1.
+ * Menggabungkan Deep Indigo (#4F46E5), Dark Navy (#0F172A), Streak Amber (#F59E0B),
+ * dan kanvas sejuk Slate (#F8FAFC) dengan standar kontras WCAG AAA/AA.
  */
 export const COLORS = {
-  // Brand & Action (Indigo)
-  primary: '#4F46E5', // Indigo 600 - Warna tombol utama & aksen aktif
-  primaryDark: '#4338CA', // Indigo 700 - State ditekan / hover
-  primaryLight: '#E0E7FF', // Indigo 100 - Badge aktif, aksen lembut
-  primarySoft: '#EEF2FF', // Indigo 50  - Latar kartu / chip aktif
+  // Brand & Action (Deep Indigo)
+  primary: '#4F46E5', // Indigo 600 - Tombol utama, hero progress fill
+  primaryDark: '#3525CD', // Deep Indigo - State ditekan / active
+  primaryLight: '#E0E7FF', // Indigo 100 - Aksen lembut
+  primarySoft: '#EEF2FF', // Indigo 50  - Latar chip aktif
+  primaryContainer: '#4F46E5',
+  onPrimary: '#FFFFFF',
 
-  // Streak & Milestone (Amber)
-  streak: '#F59E0B', // Amber 500 - Badge api konsistensi harian
-  streakDark: '#D97706', // Amber 600 - Teks badge streak aktif
-  streakLight: '#FEF3C7', // Amber 100 - Latar badge streak aktif
+  // Dark Navy Curved Header & Accents (Stitch Feature)
+  navyHeader: '#0F172A', // Slate 900 - Curved header atas beranda & status bar
+  navyMuted: '#1E293B',
+  navyBadge: 'rgba(30, 41, 59, 0.8)',
+
+  // Streak & Milestone (Amber Flame)
+  streak: '#F59E0B', // Amber 500 - Badge api konsistensi harian 🔥
+  streakDark: '#D97706', // Amber 600
+  streakLight: '#FEF3C7', // Amber 100
+  secondary: '#F59E0B',
+  secondaryContainer: '#FEA619',
+  onSecondaryContainer: '#684000',
 
   // Feedback & Status
-  success: '#10B981', // Emerald 500 - Status selesai & konfirmasi sukses
+  success: '#10B981', // Emerald 500 - Status selesai
+  successLight: '#D1FAE5',
   danger: '#EF4444', // Red 500 - Peringatan, kesalahan, tombol hapus
-  dangerLight: '#FEE2E2', // Red 100 - Latar notifikasi/banner error
+  dangerLight: '#FEE2E2', // Red 100
+  error: '#BA1A1A',
 
-  // Neutrals & Surfaces (Slate Palette)
+  // Neutrals & Soft-UI Surfaces
   background: '#F8FAFC', // Slate 50 - Latar belakang kanvas utama
-  surface: '#FFFFFF', // Putih bersih - Kartu, sheet, modal
-  surfaceMuted: '#F1F5F9', // Slate 100 - Input membulat, elemen non-aktif
-  border: '#E2E8F0', // Slate 200 - Garis batas lembut & pemisah
-  borderStrong: '#CBD5E1', // Slate 300 - Garis batas interaktif/fokus
+  surface: '#FFFFFF', // Putih bersih - Kartu bento, sheet, modal
+  surfaceDim: '#CFDAF2',
+  surfaceContainerLow: '#F0F3FF', // Latar input lembut
+  surfaceContainer: '#E7EEFF',
+  surfaceContainerHigh: '#DEE8FF',
+  surfaceContainerHighest: '#D8E3FB',
+  surfaceMuted: '#F1F5F9', // Slate 100
 
-  // Typography (Slate Hierarchy)
-  textPrimary: '#1E293B', // Slate 800 - Judul utama & teks kontras tinggi
-  textSecondary: '#64748B', // Slate 500 - Subjudul & teks pendukung
+  // Garis batas (Borders)
+  border: '#E2E8F0', // Slate 200 - Garis batas lembut
+  borderStrong: '#CBD5E1', // Slate 300 - Border aktif
+
+  // Typography Hierarchy
+  textPrimary: '#1E293B', // Slate 800 / On-surface
+  textSecondary: '#64748B', // Slate 500 - Subjudul & deskripsi
   textMuted: '#94A3B8', // Slate 400 - Placeholder input & caption
-  textOnPrimary: '#FFFFFF', // Putih murni - Teks di atas warna primary
+  textOnPrimary: '#FFFFFF', // Putih murni
+  textOnNavy: '#FFFFFF',
 
-  // Overlay & Dialog
-  backdrop: 'rgba(15, 23, 42, 0.45)', // Slate 900 semi-transparan
+  // Shadows & Overlays
+  shadowSoft: 'rgba(79, 70, 229, 0.08)',
+  shadowCard: 'rgba(15, 23, 42, 0.05)',
+  backdrop: 'rgba(15, 23, 42, 0.55)',
 } as const;
 
 export type ColorName = keyof typeof COLORS;
-
-/** Alias untuk kenyamanan impor */
 export const colors = COLORS;
 
 /**
- * 8 Preset Emoji Pilihan:
- * 💧 (Hidrasi), 📖 (Belajar/Membaca), 🏃 (Olahraga), 🧘 (Mindfulness),
- * 🥗 (Gaya Hidup Sehat), 💤 (Tidur Cukup), 💻 (Fokus Kerja/Koding), 🧹 (Kerapian)
+ * Preset Emoji untuk pemilihan kategori kebiasaan
  */
 export const PRESET_EMOJIS = [
   '💧', '📖', '🏃', '🧘',
-  '🥗', '💤', '💻', '🧹'
+  '🥗', '💤', '💻', '🧹',
+  '🎯', '🏋️', '🍎', '✨'
 ] as const;
 
 export default COLORS;
